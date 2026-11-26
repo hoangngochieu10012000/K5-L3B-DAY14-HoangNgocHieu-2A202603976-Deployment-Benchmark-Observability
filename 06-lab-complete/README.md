@@ -1,7 +1,7 @@
 # Part 6 — Final Project: Production-ready AI Agent
 
-Bạn tự xây một AI agent đủ chuẩn production từ **bản khung** trong thư mục này, kết hợp mọi thứ đã học ở Part 1–5.
-Mọi file đều đã có sẵn, phần việc của bạn nằm ở các chỗ ghi `TODO`. Bản khung chạy được nhưng **chưa đạt tiêu chí nào**.
+Bài này hướng dẫn xây dựng một trợ lý AI sẵn sàng vận hành từ **bản khung ban đầu** trong thư mục này, kết hợp các nội dung đã học ở Part 1–5.
+Bản khung ban đầu chạy được nhưng **chưa đạt tiêu chí nào**; các chỗ `TODO` trong phiên bản hiện tại đã được hoàn thành và kiểm tra bên dưới.
 
 Bài chỉ được tính hoàn thành khi script chấm báo **`PASS 12/12`**:
 
