@@ -77,56 +77,61 @@ Trong các lượt này `MOCK_ERROR_RATE=0`, nên error rate đo được là 0%
 
 ## 4. Hệ thống giám sát (production)
 
-> Phần CP8; chưa chạy trong CP7 nên chưa có ảnh hoặc số liệu production.
+Stack CP8 chạy bằng Docker Compose; Prometheus scrape đủ 3 agent, Grafana đọc metrics và Jaeger nhận trace. Hai lượt Locust scaling và một lượt gây lỗi đã chạy với 100 người dùng.
 
 ### 4.1 Ảnh chụp màn hình
 
-- [ ] Dashboard Grafana khi đang có tải (thấy rõ Golden Signals)
-- [ ] Một trace chậm trong Jaeger (thấy span nào chiếm thời gian)
-- [ ] Một trace lỗi trong Jaeger (có event `exception`)
-- [ ] Trang Alerts của Prometheus với ít nhất 1 alert đang **firing**
+- [x] Dashboard Grafana khi đang có tải (thấy rõ Golden Signals) — [grafana-dashboard.png](./screenshots/grafana-dashboard.png)
+- [x] Một trace chậm trong Jaeger (thấy span nào chiếm thời gian) — [jaeger-slow-trace.png](./screenshots/jaeger-slow-trace.png)
+- [x] Một trace lỗi trong Jaeger (có event `exception`) — [jaeger-error-trace.png](./screenshots/jaeger-error-trace.png)
+- [x] Trang Alerts của Prometheus với hai alert cùng **firing** — [prometheus-alert-firing.png](./screenshots/prometheus-alert-firing.png)
 
 ### 4.2 Thử nghiệm gây lỗi
 
 | # | Thay đổi | Alert nào firing | Thời gian từ lúc đổi → firing | Panel nào phản ánh rõ nhất |
 |---|---|---|---|---|
-| A | `MOCK_ERROR_RATE=0.2` | | | |
-| B | `MOCK_SLOW_RATE=0.3` | | | |
-| C | `LLM_MODEL=mock-llm-large` | | | |
-| D | `docker pause` 1 instance | | | |
-| E | `AGENT_VERSION=v1` | | | |
+| A | `MOCK_ERROR_RATE=0.2` (chạy đồng thời với B) | `AgentHighErrorRate` | 100 giây (14:22:00 → 14:23:41 UTC) | Error rate |
+| B | `MOCK_SLOW_RATE=0.3` (chạy đồng thời với A) | `AgentHighLatencyP95` | 161 giây (14:22:00 → 14:24:42 UTC) | p95 |
+| C | `LLM_MODEL=mock-llm-large` | Chưa thử | — | — |
+| D | `docker pause` 1 instance | Chưa thử | — | — |
+| E | `AGENT_VERSION=v1` | Không có alert hạ tầng dự kiến | — | Retrieval hit ratio, phiên bản và kết quả đánh giá |
 
-**Thí nghiệm E không làm alert nào firing. Bạn sẽ phát hiện loại sự cố này trong production bằng cách nào?**
+Hai biến A và B được áp dụng đồng thời trong một lượt tải kéo dài 4 phút. Prometheus ghi nhận cả hai alert cùng chuyển sang `firing`. Trong lượt này, Locust gửi 11.662 request `/ask`, có 2.352 lỗi (20,17%) và p95 là 1.700 ms. Sau thử nghiệm, cấu hình được trả về mặc định `MOCK_ERROR_RATE=0.01` và `MOCK_SLOW_RATE=0.03`.
 
-...
+Thay đổi phiên bản agent có thể làm giảm chất lượng câu trả lời mà không làm hỏng dịch vụ hay tăng độ trễ. Cần đo chất lượng độc lập bằng bộ câu hỏi chuẩn trong CI, theo dõi độ chính xác/retrieval hit ratio và phản hồi người dùng; không thể chỉ dựa vào cảnh báo hạ tầng.
 
 ### 4.3 Debug bằng trace
 
-Chọn 1 trace chậm nhất bạn tìm được:
+Trace chậm nhất trong lượt quan sát:
 
-- `trace_id`: ...
-- Tổng thời gian: ... ms
-- Span chiếm nhiều thời gian nhất: ... (... ms, ...%)
-- Dòng log tương ứng (grep theo `trace_id`):
+- `trace_id`: `c451fb8e63c0520570cc1f5ca46f3d03`
+- Tổng thời gian: 1.766,8 ms
+- Span chiếm nhiều thời gian nhất: `chat mock-llm-small` (1.680,8 ms, khoảng 95,1%)
+- `agent.retrieve_context` mất 25,3 ms; thời gian chủ yếu nằm ở lời gọi mô hình giả lập.
 
 ```json
+{"ts":"2026-11-26T14:21:19.938468+00:00","level":"INFO","service":"observable-agent","instance":"3cc20657f3ba","event":"llm_call","trace_id":"c451fb8e63c0520570cc1f5ca46f3d03","span_id":"f290e0376771325d","request_id":"d34e311000fc","model":"mock-llm-small","agent_version":"v2","input_tokens":76,"output_tokens":39,"cost_usd":3.5e-05,"llm_ms":1681.0}
+```
 
+Trace lỗi đối chiếu từ log JSON:
+
+- `trace_id`: `e591743d2d9b3d24e58c17a034e9784c`
+- Tổng thời gian `POST /ask`: 99,2 ms; span `chat mock-llm-small` báo lỗi với mã trạng thái 2 và event `exception`.
+
+```json
+{"ts":"2026-11-26T14:19:30.121413+00:00","level":"INFO","service":"observable-agent","instance":"b0afc4478edb","event":"llm_error","trace_id":"e591743d2d9b3d24e58c17a034e9784c","span_id":"fd4d76288efd4202","request_id":"a7ef1b4fc942","error":"Upstream LLM error: 503 Service Unavailable (mock)"}
 ```
 
 ---
 
 ## 5. Kiểm thử mở rộng quy mô (production, Locust chạy nền, 100 người dùng, 2 phút)
 
-> Phần CP8; chưa chạy Locust hoặc Docker stack trong CP7.
-
 | Số instance | RPS | p50 (ms) | p95 (ms) | p99 (ms) | Lỗi |
 |---|---|---|---|---|---|
-| 1 | | | | | |
-| 3 | | | | | |
+| 1 | 57,98 | 200 | 1.100 | 2.000 | 64/6.905 (0,93%) |
+| 3 | 59,94 | 190 | 230 | 1.700 | 70/7.127 (0,98%) |
 
-**Giải thích kết quả:** Scale có cải thiện p95 không? Nút thắt nằm ở đâu?
-
-...
+**Giải thích kết quả:** từ 1 lên 3 instance, p95 giảm từ 1.100 ms xuống 230 ms và RPS tăng nhẹ từ 57,98 lên 59,94. Ba instance giảm thời gian chờ khi tải cao; tỷ lệ lỗi gần 1% ở cả hai lượt, phù hợp với lỗi giả lập mặc định và vẫn dưới SLO 2%. p99 vẫn cao (1.700 ms ở 3 instance) do một phần nhỏ request bị làm chậm bởi `MOCK_SLOW_RATE=0.03`; thêm instance giảm nghẽn nhưng không loại bỏ độ trễ đuôi của mô hình.
 
 ---
 
