@@ -4,7 +4,7 @@
 
 https://k5-day14-agent-5ss8.onrender.com
 
-Sau khi deploy bản cập nhật có giao diện demo, mở URL trên và chỉ cần nhập câu hỏi. Giao diện gọi `/demo/ask`, còn API `/ask` vẫn yêu cầu `X-API-Key`. Các lượt demo dùng chung giới hạn tốc độ và ngân sách của dịch vụ.
+Mở URL trên và nhập câu hỏi để dùng giao diện demo. Giao diện gọi `/demo/ask`, còn API `/ask` vẫn yêu cầu `X-API-Key`. Các lượt demo dùng chung giới hạn tốc độ và ngân sách của dịch vụ.
 
 ## Nền tảng và cấu hình
 
