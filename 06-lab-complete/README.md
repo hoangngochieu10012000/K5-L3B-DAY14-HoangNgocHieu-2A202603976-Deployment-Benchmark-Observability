@@ -97,6 +97,8 @@ curl -X POST http://localhost:8000/ask \
      -d '{"question": "What is deployment?"}'
 ```
 
+Mở [http://localhost:8000](http://localhost:8000) để dùng giao diện hỏi đáp. Nhập cùng `AGENT_API_KEY` đã cấu hình cho ứng dụng; giao diện gửi khóa trong header `X-API-Key` và không lưu vào `localStorage` hoặc cookie.
+
 ---
 
 ## Chấm bài

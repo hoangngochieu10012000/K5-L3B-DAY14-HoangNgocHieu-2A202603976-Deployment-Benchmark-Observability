@@ -9,8 +9,10 @@ import logging
 import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from .auth import verify_api_key
@@ -53,6 +55,11 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Production AI Agent", lifespan=lifespan)
+
+
+@app.get("/", include_in_schema=False)
+def home() -> FileResponse:
+    return FileResponse(Path(__file__).parent / "static" / "index.html")
 
 
 class AskRequest(BaseModel):

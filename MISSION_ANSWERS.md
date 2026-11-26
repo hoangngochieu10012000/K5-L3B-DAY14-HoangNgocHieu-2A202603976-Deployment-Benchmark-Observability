@@ -102,6 +102,18 @@ Qdrant ── volume qdrant_data
 - Nginx nhận traffic ngoài ở cổng 80 rồi chuyển tiếp vào agent trong network nội bộ. Redis và Qdrant được khai báo như các service hạ tầng trong stack, không publish cổng trực tiếp ra host; bản `main.py` demo chưa gọi trực tiếp các dịch vụ này.
 - Ghi chú: Docker Compose hiện cảnh báo thuộc tính `version` trong file YAML đã cũ và bị bỏ qua; cảnh báo không ngăn stack chạy.
 
+## Part 3: Đưa ứng dụng lên đám mây
+
+### Exercise 3.2: Triển khai bằng Render
+
+- Chọn Render Blueprint để triển khai ứng dụng Part 6, không dùng ứng dụng mẫu ở `03-cloud-deployment/`. Cấu hình nằm tại [render.yaml](06-lab-complete/render.yaml): Render đọc Dockerfile trong `06-lab-complete/`, tạo dịch vụ web ở Singapore và Redis Key Value; `AGENT_API_KEY` được Render tự tạo, còn `REDIS_URL` được nối từ dịch vụ Redis. Giá trị bí mật không được ghi vào kho mã.
+- URL công khai: [https://k5-day14-agent-5ss8.onrender.com](https://k5-day14-agent-5ss8.onrender.com). Hướng dẫn kiểm tra lại nằm trong [DEPLOYMENT.md](DEPLOYMENT.md).
+- Trang `/` có giao diện hỏi đáp cho người dùng: hiển thị tình trạng dịch vụ, nhận câu hỏi và API key, rồi gửi khóa trong `X-API-Key`. Trang không ghi khóa vào `localStorage` hoặc cookie; câu trả lời được chèn bằng `textContent`.
+- Kết quả kiểm tra trên dịch vụ đang chạy: `GET /health` → **200**, `GET /ready` → **200**, `POST /ask` không có khóa (JSON hợp lệ) → **401**, và `POST /ask` có khóa đúng → **200**.
+- **So sánh cấu hình:** [railway.toml](06-lab-complete/railway.toml) mô tả cách dựng và chạy ứng dụng, đường dẫn kiểm tra sức khỏe và chính sách khởi động lại cho Railway. [render.yaml](06-lab-complete/render.yaml) là Blueprint khai báo cả dịch vụ web lẫn Redis, vùng chạy, gói dịch vụ, biến môi trường và đường dẫn kiểm tra sức khỏe; Render dựng ứng dụng bằng Dockerfile. Hai tệp dùng cú pháp và tên thuộc tính riêng của từng nền tảng.
+- **Cloud Run (Exercise 3.3):** Khi có thay đổi được đẩy lên nhánh chính, Cloud Build lần lượt chạy kiểm thử, dựng ảnh Docker, đẩy ảnh lên Container Registry rồi triển khai phiên bản mới lên Cloud Run. Tệp [service.yaml](03-cloud-deployment/production-cloud-run/service.yaml) quy định tự mở rộng từ 1 đến 10 bản chạy, giới hạn 80 yêu cầu đồng thời mỗi bản, tài nguyên, kiểm tra `/health` và `/ready`, cùng cách lấy khóa từ Secret Manager. Các bước được mô tả trong [cloudbuild.yaml](03-cloud-deployment/production-cloud-run/cloudbuild.yaml).
+- **Lưu ý gói miễn phí:** dịch vụ web có thể ngủ khi không có yêu cầu và cần khoảng 50 giây hoặc hơn để hoạt động lại. Redis miễn phí không bảo đảm lưu dữ liệu lâu dài; phù hợp thử nghiệm, không nên dùng để lưu phiên lâu dài trên hệ thống thật.
+
 
 ## Part 4: API Security
 

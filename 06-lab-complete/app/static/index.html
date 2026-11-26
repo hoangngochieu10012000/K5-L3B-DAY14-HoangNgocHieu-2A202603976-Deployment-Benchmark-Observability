@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f7fb">
+    <title>Trợ lý AI · Day 14</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #172033;
+        background: #f5f7fb;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        padding: 48px 20px;
+        background:
+          radial-gradient(ellipse at 12% 8%, rgba(108, 99, 255, .13), transparent 34rem),
+          radial-gradient(ellipse at 92% 85%, rgba(55, 190, 160, .11), transparent 28rem),
+          #f5f7fb;
+      }
+
+      .shell { width: min(100%, 760px); margin: 0 auto; }
+
+      .topline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 0 2px 22px;
+        color: #6b7488;
+        font-size: .82rem;
+      }
+
+      .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: #27324a; }
+      .brand-mark {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border-radius: 11px;
+        color: #fff;
+        background: linear-gradient(135deg, #7167f8, #4d8df5);
+        box-shadow: 0 6px 15px rgba(89, 103, 238, .24);
+      }
+
+      .live {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 11px;
+        border: 1px solid #dfe7e5;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .74);
+      }
+
+      .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #adb6c5; }
+      .live[data-state="ok"] .live-dot { background: #27ae80; box-shadow: 0 0 0 3px #e4f6ef; }
+      .live[data-state="error"] .live-dot { background: #e05a62; }
+
+      .card {
+        overflow: hidden;
+        border: 1px solid rgba(223, 228, 238, .9);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, .94);
+        box-shadow: 0 24px 70px rgba(36, 48, 80, .10);
+      }
+
+      .hero {
+        padding: 38px 42px 32px;
+        color: #fff;
+        background: linear-gradient(118deg, #252b55 0%, #4f51a4 58%, #7167d9 100%);
+      }
+
+      .eyebrow {
+        margin: 0 0 12px;
+        color: #c8c9ff;
+        font-size: .72rem;
+        font-weight: 700;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+      }
+
+      h1 { margin: 0; font-size: clamp(1.8rem, 5vw, 2.45rem); letter-spacing: -.04em; }
+      .hero p:last-child { max-width: 520px; margin: 12px 0 0; color: #e1e2ff; line-height: 1.65; }
+      .content { padding: 32px 42px 38px; }
+
+      form { display: grid; gap: 10px; }
+      label { margin-top: 8px; color: #34405a; font-size: .88rem; font-weight: 650; }
+      input, textarea {
+        width: 100%;
+        border: 1px solid #dce2ed;
+        border-radius: 12px;
+        outline: none;
+        background: #fbfcfe;
+        color: #172033;
+        font: inherit;
+        transition: border-color .15s, box-shadow .15s, background .15s;
+      }
+
+      input { height: 46px; padding: 0 14px; }
+      textarea { min-height: 112px; padding: 13px 14px; resize: vertical; line-height: 1.55; }
+      input:focus, textarea:focus { border-color: #7770e8; background: #fff; box-shadow: 0 0 0 4px rgba(113, 103, 248, .12); }
+      input::placeholder, textarea::placeholder { color: #a0a9ba; }
+
+      .hint { margin: 0; color: #7b8498; font-size: .78rem; line-height: 1.5; }
+      button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        min-height: 48px;
+        margin-top: 10px;
+        border: 0;
+        border-radius: 12px;
+        color: #fff;
+        background: linear-gradient(100deg, #625ce4, #4f78e8);
+        box-shadow: 0 8px 18px rgba(84, 99, 219, .22);
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform .15s, filter .15s;
+      }
+
+      button:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.04); }
+      button:disabled { cursor: wait; opacity: .7; }
+      button:focus-visible { outline: 3px solid #aeb8ff; outline-offset: 3px; }
+
+      .status { min-height: 22px; margin: 2px 0 0; color: #68748a; font-size: .88rem; }
+      .status[data-state="error"] { color: #b33642; }
+
+      .answer {
+        margin-top: 22px;
+        padding: 18px 20px;
+        border: 1px solid #e3e7f2;
+        border-radius: 14px;
+        background: #f8f9ff;
+      }
+
+      .answer[hidden] { display: none; }
+      .answer-label { margin: 0 0 8px; color: #6260b5; font-size: .76rem; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+      .answer-text { margin: 0; color: #29344b; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+      footer { margin: 18px 4px 0; color: #858da0; font-size: .76rem; line-height: 1.55; text-align: center; }
+
+      @media (max-width: 560px) {
+        body { padding: 24px 14px; }
+        .hero { padding: 30px 24px 26px; }
+        .content { padding: 25px 24px 30px; }
+        .topline { margin-bottom: 16px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <div class="topline">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">✦</span><span>Day 14 · AI Agent</span></div>
+        <div class="live" id="health" data-state="checking" role="status" aria-live="polite">
+          <span class="live-dot" aria-hidden="true"></span><span id="health-label">Đang kiểm tra</span>
+        </div>
+      </div>
+
+      <section class="card" aria-labelledby="page-title">
+        <header class="hero">
+          <p class="eyebrow">Production-ready · Demo</p>
+          <h1 id="page-title">Xin chào, bạn muốn tìm hiểu điều gì?</h1>
+          <p>Gửi câu hỏi đến AI Agent đang chạy trên cloud. Nhập API key để xác thực, sau đó xem câu trả lời ngay bên dưới.</p>
+        </header>
+
+        <div class="content">
+          <form id="ask-form">
+            <label for="api-key">API key</label>
+            <input id="api-key" name="api-key" type="password" autocomplete="off" placeholder="Nhập API key đã cấu hình trên Render" required>
+            <p class="hint">Khóa chỉ được gửi trong header xác thực của yêu cầu này; giao diện không lưu khóa vào localStorage hoặc cookie.</p>
+
+            <label for="question">Câu hỏi</label>
+            <textarea id="question" name="question" maxlength="2000" placeholder="Ví dụ: Vì sao ứng dụng cần Redis khi chạy nhiều bản?" required></textarea>
+            <button id="submit" type="submit"><span id="button-label">Gửi câu hỏi</span><span aria-hidden="true">→</span></button>
+            <p class="status" id="status" role="status" aria-live="polite"></p>
+          </form>
+
+          <section class="answer" id="answer" aria-live="polite" hidden>
+            <p class="answer-label">Trả lời</p>
+            <p class="answer-text" id="answer-text"></p>
+          </section>
+        </div>
+      </section>
+
+      <footer>Yêu cầu được bảo vệ bằng API key. Không chia sẻ khóa và không nhập khóa cá nhân trên thiết bị công cộng.</footer>
+    </main>
+
+    <script>
+      const form = document.getElementById("ask-form");
+      const apiKeyInput = document.getElementById("api-key");
+      const questionInput = document.getElementById("question");
+      const submitButton = document.getElementById("submit");
+      const buttonLabel = document.getElementById("button-label");
+      const statusText = document.getElementById("status");
+      const answerPanel = document.getElementById("answer");
+      const answerText = document.getElementById("answer-text");
+      const healthBadge = document.getElementById("health");
+      const healthLabel = document.getElementById("health-label");
+
+      async function checkHealth() {
+        try {
+          const response = await fetch("/health");
+          if (!response.ok) throw new Error("Health check failed");
+          healthBadge.dataset.state = "ok";
+          healthLabel.textContent = "Dịch vụ đang hoạt động";
+        } catch {
+          healthBadge.dataset.state = "error";
+          healthLabel.textContent = "Chưa kết nối được";
+        }
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const apiKey = apiKeyInput.value.trim();
+        const question = questionInput.value.trim();
+        if (!apiKey) {
+          statusText.dataset.state = "error";
+          statusText.textContent = "Vui lòng nhập API key.";
+          apiKeyInput.focus();
+          return;
+        }
+        if (!question) {
+          statusText.dataset.state = "error";
+          statusText.textContent = "Vui lòng nhập câu hỏi.";
+          questionInput.focus();
+          return;
+        }
+
+        submitButton.disabled = true;
+        buttonLabel.textContent = "Đang gửi…";
+        statusText.dataset.state = "";
+        statusText.textContent = "";
+        answerPanel.hidden = true;
+
+        try {
+          const response = await fetch("/ask", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-API-Key": apiKey
+            },
+            body: JSON.stringify({ question })
+          });
+          const result = await response.json();
+          if (!response.ok) {
+            const detail = typeof result.detail === "string" ? result.detail : "Không thể xử lý yêu cầu.";
+            throw new Error(response.status === 401 ? "API key không đúng hoặc đã hết hiệu lực." : detail);
+          }
+
+          answerText.textContent = result.answer;
+          answerPanel.hidden = false;
+          statusText.textContent = "Đã nhận câu trả lời.";
+        } catch (error) {
+          statusText.dataset.state = "error";
+          statusText.textContent = error instanceof Error ? error.message : "Không thể kết nối dịch vụ.";
+        } finally {
+          submitButton.disabled = false;
+          buttonLabel.textContent = "Gửi câu hỏi";
+        }
+      });
+
+      checkHealth();
+    </script>
+  </body>
+</html>
