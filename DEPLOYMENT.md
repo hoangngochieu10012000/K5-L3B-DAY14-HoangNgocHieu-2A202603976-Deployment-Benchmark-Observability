@@ -29,7 +29,7 @@ export BASE AGENT_API_KEY
 |---|---:|---:|
 | `curl -sS -o /dev/null -w '%{http_code}\n' "$BASE/health"` | 200 | 200 |
 | `curl -sS -o /dev/null -w '%{http_code}\n' "$BASE/ready"` | 200 | 200 |
-| Gửi `POST /demo/ask` với JSON hợp lệ, không có API key | 200 | Chưa kiểm tra trên bản Render mới |
+| Gửi `POST /demo/ask` với JSON hợp lệ, không có API key | 200 | 200 |
 | Gửi `POST /ask` với JSON hợp lệ nhưng không có `X-API-Key` | 401 | 401 |
 | Gửi `POST /ask` với khóa API đúng | 200 | 200 |
 
