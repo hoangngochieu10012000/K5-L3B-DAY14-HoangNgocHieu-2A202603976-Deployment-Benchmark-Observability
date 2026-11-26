@@ -67,6 +67,16 @@ class AskRequest(BaseModel):
     user_id: str | None = None
 
 
+def _answer_question(question: str, api_key: str) -> dict[str, str]:
+    check_rate_limit(api_key)
+    check_budget()
+    answer = llm_ask(question)
+    input_tokens = max(1, len(question.split()) * 2)
+    output_tokens = max(1, len(answer.split()) * 2)
+    record_cost(input_tokens, output_tokens)
+    return {"question": question, "answer": answer}
+
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     started = time.perf_counter()
@@ -98,10 +108,11 @@ def ready() -> dict[str, bool]:
 
 @app.post("/ask")
 def ask(body: AskRequest, api_key: str = Depends(verify_api_key)):
-    check_rate_limit(api_key)
-    check_budget()
-    answer = llm_ask(body.question)
-    input_tokens = max(1, len(body.question.split()) * 2)
-    output_tokens = max(1, len(answer.split()) * 2)
-    record_cost(input_tokens, output_tokens)
-    return {"question": body.question, "answer": answer}
+    return _answer_question(body.question, api_key)
+
+
+@app.post("/demo/ask")
+def demo_ask(body: AskRequest):
+    if not settings.agent_api_key:
+        raise HTTPException(status_code=503, detail="Public demo is not configured")
+    return _answer_question(body.question, settings.agent_api_key)

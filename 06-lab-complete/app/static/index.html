@@ -168,22 +168,20 @@
 
       <section class="card" aria-labelledby="page-title">
         <header class="hero">
-          <p class="eyebrow">Production-ready · Demo</p>
+          <p class="eyebrow">Production-ready · Demo công khai</p>
           <h1 id="page-title">Xin chào, bạn muốn tìm hiểu điều gì?</h1>
-          <p>Gửi câu hỏi đến AI Agent đang chạy trên cloud. Nhập API key để xác thực, sau đó xem câu trả lời ngay bên dưới.</p>
+          <p>Gửi câu hỏi đến AI Agent đang chạy trên cloud và xem câu trả lời ngay bên dưới.</p>
         </header>
 
         <div class="content">
           <form id="ask-form">
-            <label for="api-key">API key</label>
-            <input id="api-key" name="api-key" type="password" autocomplete="off" placeholder="Nhập API key đã cấu hình trên Render" required>
-            <p class="hint">Khóa chỉ được gửi trong header xác thực của yêu cầu này; giao diện không lưu khóa vào localStorage hoặc cookie.</p>
-
             <label for="question">Câu hỏi</label>
             <textarea id="question" name="question" maxlength="2000" placeholder="Ví dụ: Vì sao ứng dụng cần Redis khi chạy nhiều bản?" required></textarea>
             <button id="submit" type="submit"><span id="button-label">Gửi câu hỏi</span><span aria-hidden="true">→</span></button>
             <p class="status" id="status" role="status" aria-live="polite"></p>
           </form>
+
+          <p class="hint">Đây là bản dùng thử công khai; các yêu cầu dùng chung giới hạn lượt gọi và ngân sách của dịch vụ.</p>
 
           <section class="answer" id="answer" aria-live="polite" hidden>
             <p class="answer-label">Trả lời</p>
@@ -197,7 +195,6 @@
 
     <script>
       const form = document.getElementById("ask-form");
-      const apiKeyInput = document.getElementById("api-key");
       const questionInput = document.getElementById("question");
       const submitButton = document.getElementById("submit");
       const buttonLabel = document.getElementById("button-label");
@@ -221,14 +218,7 @@
 
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
-        const apiKey = apiKeyInput.value.trim();
         const question = questionInput.value.trim();
-        if (!apiKey) {
-          statusText.dataset.state = "error";
-          statusText.textContent = "Vui lòng nhập API key.";
-          apiKeyInput.focus();
-          return;
-        }
         if (!question) {
           statusText.dataset.state = "error";
           statusText.textContent = "Vui lòng nhập câu hỏi.";
@@ -243,18 +233,17 @@
         answerPanel.hidden = true;
 
         try {
-          const response = await fetch("/ask", {
+          const response = await fetch("/demo/ask", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-API-Key": apiKey
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ question })
           });
           const result = await response.json();
           if (!response.ok) {
+            if (response.status === 429) throw new Error("Demo đã đạt giới hạn lượt gọi. Vui lòng thử lại sau ít phút.");
+            if (response.status === 402) throw new Error("Demo đã đạt giới hạn ngân sách trong ngày.");
             const detail = typeof result.detail === "string" ? result.detail : "Không thể xử lý yêu cầu.";
-            throw new Error(response.status === 401 ? "API key không đúng hoặc đã hết hiệu lực." : detail);
+            throw new Error(detail);
           }
 
           answerText.textContent = result.answer;

@@ -4,7 +4,7 @@
 
 https://k5-day14-agent-5ss8.onrender.com
 
-Mở URL trên trong trình duyệt để dùng giao diện hỏi đáp; nhập API key hiện tại trên Render rồi gửi câu hỏi. Giao diện không lưu key vào `localStorage` hoặc cookie.
+Sau khi deploy bản cập nhật có giao diện demo, mở URL trên và chỉ cần nhập câu hỏi. Giao diện gọi `/demo/ask`, còn API `/ask` vẫn yêu cầu `X-API-Key`. Các lượt demo dùng chung giới hạn tốc độ và ngân sách của dịch vụ.
 
 ## Nền tảng và cấu hình
 
@@ -29,8 +29,18 @@ export BASE AGENT_API_KEY
 |---|---:|---:|
 | `curl -sS -o /dev/null -w '%{http_code}\n' "$BASE/health"` | 200 | 200 |
 | `curl -sS -o /dev/null -w '%{http_code}\n' "$BASE/ready"` | 200 | 200 |
+| Gửi `POST /demo/ask` với JSON hợp lệ, không có API key | 200 | Chưa kiểm tra trên bản Render mới |
 | Gửi `POST /ask` với JSON hợp lệ nhưng không có `X-API-Key` | 401 | 401 |
 | Gửi `POST /ask` với khóa API đúng | 200 | 200 |
+
+Lệnh kiểm tra giao diện demo không cần khóa:
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' \
+  -X POST "$BASE/demo/ask" \
+  -H 'Content-Type: application/json' \
+  -d '{"question":"Kiểm tra bản demo"}'
+```
 
 Lệnh kiểm tra thiếu khóa:
 

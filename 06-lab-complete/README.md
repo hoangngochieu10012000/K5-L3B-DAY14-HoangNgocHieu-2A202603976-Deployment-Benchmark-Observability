@@ -84,6 +84,7 @@ Script tự khởi động agent của bạn, gọi API thật, build và chạy
 ```bash
 pip install -r requirements.txt
 cp .env.example .env
+# Set AGENT_API_KEY=dev-key in .env to enable the keyless local demo; do not reuse it in production.
 
 # Chạy nhanh không cần Docker (cần Redis riêng nếu muốn test rate limit thật)
 AGENT_API_KEY=dev-key uvicorn app.main:app --reload
@@ -97,7 +98,7 @@ curl -X POST http://localhost:8000/ask \
      -d '{"question": "What is deployment?"}'
 ```
 
-Mở [http://localhost:8000](http://localhost:8000) để dùng giao diện hỏi đáp. Nhập cùng `AGENT_API_KEY` đã cấu hình cho ứng dụng; giao diện gửi khóa trong header `X-API-Key` và không lưu vào `localStorage` hoặc cookie.
+Mở [http://localhost:8000](http://localhost:8000) để dùng giao diện hỏi đáp không cần nhập khóa. Giao diện gọi `/demo/ask`; ứng dụng giữ `AGENT_API_KEY` ở máy chủ và vẫn áp dụng giới hạn lượt gọi cùng ngân sách. API `/ask` dành cho client vẫn yêu cầu header `X-API-Key`.
 
 ---
 
